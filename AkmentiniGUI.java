@@ -3,99 +3,13 @@ import javax.swing.border.*;
 import java.awt.*;
 import java.awt.event.*;
 
+/**
+ * GUI priekšgals spēlei "Akmentiņi".
+ * Atkarīgs no: GameState.java, AI.java
+ * Kompilēšana: javac GameState.java AI.java AkmentiņiGUI.java
+ * Palaišana:   java AkmentiņiGUI
+ */
 public class AkmentiniGUI {
-
-    // ─── GameState ────────────────────────────────────────────────────────────
-    static class GameState {
-        final int stonesLeft;
-        final int p1Points, p2Points;
-        final int p1Taken, p2Taken;
-        final boolean p1Turn;
-
-        GameState(int stonesLeft, int p1Points, int p2Points,
-                  int p1Taken, int p2Taken, boolean p1Turn) {
-            this.stonesLeft = stonesLeft;
-            this.p1Points   = p1Points;
-            this.p2Points   = p2Points;
-            this.p1Taken    = p1Taken;
-            this.p2Taken    = p2Taken;
-            this.p1Turn     = p1Turn;
-        }
-
-        boolean isTerminal() { return stonesLeft == 0; }
-        int finalScoreP1()   { return p1Points + p1Taken; }
-        int finalScoreP2()   { return p2Points + p2Taken; }
-
-        GameState applyMove(int take) {
-            int newStones = stonesLeft - take;
-            int np1p = p1Points, np2p = p2Points;
-            int np1t = p1Taken  + (p1Turn ? take : 0);
-            int np2t = p2Taken  + (!p1Turn ? take : 0);
-
-            if (newStones % 2 == 0) {
-                if (p1Turn) np2p += 2; else np1p += 2;
-            } else {
-                if (p1Turn) np1p += 2; else np2p += 2;
-            }
-            return new GameState(newStones, np1p, np2p, np1t, np2t, !p1Turn);
-        }
-    }
-
-    // ─── AI ───────────────────────────────────────────────────────────────────
-    static class AI {
-        private final int depthLimit;
-
-        AI(int depthLimit) { this.depthLimit = depthLimit; }
-
-        int chooseMove(GameState state) {
-            int bestMove = -1, bestValue = Integer.MIN_VALUE;
-            for (int move : possibleMoves(state.stonesLeft)) {
-                int value = alphabeta(state.applyMove(move), depthLimit - 1,
-                                      Integer.MIN_VALUE, Integer.MAX_VALUE);
-                if (value > bestValue) { bestValue = value; bestMove = move; }
-            }
-            return bestMove;
-        }
-
-        private int alphabeta(GameState s, int depth, int alpha, int beta) {
-            if (s.isTerminal()) return s.finalScoreP2() - s.finalScoreP1();
-            int[] moves = possibleMoves(s.stonesLeft);
-            if (moves.length == 0) return s.finalScoreP2() - s.finalScoreP1();
-            if (depth == 0) return heuristic(s);
-
-            boolean maximizing = !s.p1Turn;
-            if (maximizing) {
-                int value = Integer.MIN_VALUE;
-                for (int m : moves) {
-                    value = Math.max(value, alphabeta(s.applyMove(m), depth - 1, alpha, beta));
-                    alpha = Math.max(alpha, value);
-                    if (alpha >= beta) break;
-                }
-                return value;
-            } else {
-                int value = Integer.MAX_VALUE;
-                for (int m : moves) {
-                    value = Math.min(value, alphabeta(s.applyMove(m), depth - 1, alpha, beta));
-                    beta = Math.min(beta, value);
-                    if (alpha >= beta) break;
-                }
-                return value;
-            }
-        }
-
-        private int heuristic(GameState s) {
-            int p1 = s.p1Points + s.p1Taken;
-            int p2 = s.p2Points + s.p2Taken;
-            int bias = s.p1Turn ? -1 : 1;
-            return (p2 - p1) * 10 + bias;
-        }
-
-        private int[] possibleMoves(int stonesLeft) {
-            if (stonesLeft >= 3) return new int[]{2, 3};
-            if (stonesLeft == 2) return new int[]{2};
-            return new int[]{};
-        }
-    }
 
     // ─── Colours ──────────────────────────────────────────────────────────────
     static final Color BG         = new Color(245, 245, 245);
@@ -115,10 +29,8 @@ public class AkmentiniGUI {
     static CardLayout cards;
     static JPanel root;
 
-    // setup
     static JSpinner stoneSpinner;
 
-    // game
     static JLabel stonesCountLabel, statusLabel;
     static JLabel p1PtsLabel, p1TakenLabel;
     static JLabel p2PtsLabel, p2TakenLabel;
@@ -127,10 +39,12 @@ public class AkmentiniGUI {
     static JButton btn2, btn3;
     static JTextArea logArea;
 
+    static JLabel resultTitle, resultScores;
+
     // ─── main ─────────────────────────────────────────────────────────────────
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
-            frame = new JFrame("Akmentini");
+            frame = new JFrame("Akmentiņi");
             frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
             frame.setSize(620, 700);
             frame.setMinimumSize(new Dimension(480, 600));
@@ -140,9 +54,9 @@ public class AkmentiniGUI {
             root  = new JPanel(cards);
             root.setBackground(BG);
 
-            root.add(buildSetupPanel(), "setup");
-            root.add(buildGamePanel(),  "game");
-            root.add(buildResultPanel(),"result");
+            root.add(buildSetupPanel(),  "setup");
+            root.add(buildGamePanel(),   "game");
+            root.add(buildResultPanel(), "result");
 
             frame.setContentPane(root);
             frame.setVisible(true);
@@ -159,11 +73,11 @@ public class AkmentiniGUI {
         inner.setBackground(BG);
         inner.setBorder(BorderFactory.createEmptyBorder(0, 24, 0, 24));
 
-        JLabel title = new JLabel("Akmentini");
+        JLabel title = new JLabel("Akmentiņi");
         title.setFont(new Font("SansSerif", Font.PLAIN, 28));
         title.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        JLabel sub = new JLabel("Paņem 2 vai 3 akmentinus. Pāra skaits galda — pretiniekam +2 pts.");
+        JLabel sub = new JLabel("Paņem 2 vai 3 akmentiņus. Pāra skaits galda — pretiniekam +2 pts.");
         sub.setFont(new Font("SansSerif", Font.PLAIN, 13));
         sub.setForeground(MUTED);
         sub.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -172,7 +86,7 @@ public class AkmentiniGUI {
         row.setBackground(BG);
         row.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        JLabel lbl = new JLabel("Akmentinu skaits (50–70):  ");
+        JLabel lbl = new JLabel("Akmentiņu skaits (50–70):  ");
         lbl.setFont(new Font("SansSerif", Font.PLAIN, 14));
         lbl.setForeground(MUTED);
 
@@ -208,7 +122,6 @@ public class AkmentiniGUI {
         p.setBackground(BG);
         p.setBorder(BorderFactory.createEmptyBorder(20, 24, 20, 24));
 
-        // scoreboard
         JPanel scoreRow = new JPanel(new GridLayout(1, 2, 12, 0));
         scoreRow.setBackground(BG);
         scoreRow.setMaximumSize(new Dimension(Integer.MAX_VALUE, 110));
@@ -223,12 +136,12 @@ public class AkmentiniGUI {
         scoreRow.add(p1Card);
         scoreRow.add(p2Card);
 
-        // stones area
         JPanel stonesArea = new JPanel();
         stonesArea.setLayout(new BoxLayout(stonesArea, BoxLayout.Y_AXIS));
         stonesArea.setBackground(CARD_BG);
         stonesArea.setBorder(BorderFactory.createCompoundBorder(
-                new RoundedBorder(12, CARD_BG), BorderFactory.createEmptyBorder(14, 16, 14, 16)));
+                new RoundedBorder(12, CARD_BG),
+                BorderFactory.createEmptyBorder(14, 16, 14, 16)));
         stonesArea.setAlignmentX(Component.LEFT_ALIGNMENT);
         stonesArea.setMaximumSize(new Dimension(Integer.MAX_VALUE, 160));
 
@@ -236,7 +149,7 @@ public class AkmentiniGUI {
         stonesCountLabel.setFont(new Font("SansSerif", Font.PLAIN, 48));
         stonesCountLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        JLabel stonesLbl = new JLabel("akmentini uz galda", SwingConstants.CENTER);
+        JLabel stonesLbl = new JLabel("akmentiņi uz galda", SwingConstants.CENTER);
         stonesLbl.setFont(new Font("SansSerif", Font.PLAIN, 13));
         stonesLbl.setForeground(MUTED);
         stonesLbl.setAlignmentX(Component.CENTER_ALIGNMENT);
@@ -251,13 +164,11 @@ public class AkmentiniGUI {
         stonesArea.add(Box.createVerticalStrut(8));
         stonesArea.add(stonesVisual);
 
-        // status
         statusLabel = new JLabel("Tavs gājiens. Paņem 2 vai 3.");
         statusLabel.setFont(new Font("SansSerif", Font.PLAIN, 14));
         statusLabel.setForeground(MUTED);
         statusLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        // move buttons
         JPanel btnRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 12, 0));
         btnRow.setBackground(BG);
         btnRow.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -273,7 +184,6 @@ public class AkmentiniGUI {
         btnRow.add(btn2);
         btnRow.add(btn3);
 
-        // log
         logArea = new JTextArea(7, 30);
         logArea.setEditable(false);
         logArea.setFont(new Font("Monospaced", Font.PLAIN, 12));
@@ -300,8 +210,6 @@ public class AkmentiniGUI {
     }
 
     // ─── Result panel ─────────────────────────────────────────────────────────
-    static JLabel resultTitle, resultScores;
-
     static JPanel buildResultPanel() {
         JPanel p = new JPanel(new GridBagLayout());
         p.setBackground(BG);
@@ -310,7 +218,8 @@ public class AkmentiniGUI {
         box.setLayout(new BoxLayout(box, BoxLayout.Y_AXIS));
         box.setBackground(CARD_BG);
         box.setBorder(BorderFactory.createCompoundBorder(
-                new RoundedBorder(12, CARD_BG), BorderFactory.createEmptyBorder(32, 40, 32, 40)));
+                new RoundedBorder(12, CARD_BG),
+                BorderFactory.createEmptyBorder(32, 40, 32, 40)));
 
         resultTitle = new JLabel("", SwingConstants.CENTER);
         resultTitle.setFont(new Font("SansSerif", Font.PLAIN, 26));
@@ -342,9 +251,10 @@ public class AkmentiniGUI {
         card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
         card.setBackground(CARD_BG);
         card.setBorder(BorderFactory.createCompoundBorder(
-                new RoundedBorder(8, CARD_BG), BorderFactory.createEmptyBorder(10, 14, 10, 14)));
+                new RoundedBorder(8, CARD_BG),
+                BorderFactory.createEmptyBorder(10, 14, 10, 14)));
 
-        JLabel lbl  = new JLabel(labelText);
+        JLabel lbl = new JLabel(labelText);
         lbl.setFont(new Font("SansSerif", Font.PLAIN, 12));
         lbl.setForeground(MUTED);
 
@@ -398,7 +308,7 @@ public class AkmentiniGUI {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 g2.setColor(borderColor);
-                g2.drawRoundRect(0, 0, getWidth()-1, getHeight()-1, 8, 8);
+                g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 8, 8);
                 g2.dispose();
             }
         };
@@ -415,9 +325,10 @@ public class AkmentiniGUI {
     // ─── Game logic ───────────────────────────────────────────────────────────
     static void startGame() {
         int n = (Integer) stoneSpinner.getValue();
+        // GameState no GameState.java
         state = new GameState(n, 0, 0, 0, 0, true);
         logArea.setText("");
-        addLog("Spēle sākta ar " + n + " akmentiniem.", "system");
+        addLog("Spēle sākta ar " + n + " akmentiņiem.", "system");
         updateUI();
         cards.show(root, "game");
     }
@@ -426,6 +337,7 @@ public class AkmentiniGUI {
         if (!state.p1Turn || take > state.stonesLeft) return;
         int after = state.stonesLeft - take;
         String parity = after % 2 == 0 ? "Pāra skaits — AI +2 pts" : "Nepāra skaits — tev +2 pts";
+        // applyMove no GameState.java
         state = state.applyMove(take);
         addLog("Tu paņēmi " + take + ". " + parity, "p1");
         updateUI();
@@ -435,12 +347,13 @@ public class AkmentiniGUI {
         btn2.setEnabled(false);
         btn3.setEnabled(false);
 
-        Timer t = new Timer(400, e -> {
+        javax.swing.Timer t = new javax.swing.Timer(400, e -> {
+            // chooseMove no AI.java
             int m = ai.chooseMove(state);
             int after2 = state.stonesLeft - m;
-            String p2 = after2 % 2 == 0 ? "Pāra skaits — tev +2 pts" : "Nepāra skaits — AI +2 pts";
+            String p2parity = after2 % 2 == 0 ? "Pāra skaits — tev +2 pts" : "Nepāra skaits — AI +2 pts";
             state = state.applyMove(m);
-            addLog("AI paņēma " + m + ". " + p2, "p2");
+            addLog("AI paņēma " + m + ". " + p2parity, "p2");
             updateUI();
             if (!checkEnd()) {
                 statusLabel.setText("Tavs gājiens. Paņem 2 vai 3.");
@@ -453,16 +366,14 @@ public class AkmentiniGUI {
     }
 
     static boolean checkEnd() {
-        boolean terminal = state.isTerminal();
-        int[] moves = state.stonesLeft >= 3 ? new int[]{2,3} :
-                      state.stonesLeft == 2 ? new int[]{2} : new int[]{};
-        if (!terminal && moves.length > 0) return false;
+        // isTerminal, finalScoreP1, finalScoreP2 no GameState.java
+        if (!state.isTerminal() && state.stonesLeft >= 2) return false;
 
         int f1 = state.finalScoreP1(), f2 = state.finalScoreP2();
         if (f1 > f2) { resultTitle.setText("Tu uzvarēji!"); resultTitle.setForeground(BLUE_TXT); }
         else if (f2 > f1) { resultTitle.setText("AI uzvarēja."); resultTitle.setForeground(ORANGE_TXT); }
         else { resultTitle.setText("Neizšķirts!"); resultTitle.setForeground(Color.DARK_GRAY); }
-        resultScores.setText("Tu: " + f1 + " pts  |  AI: " + f2 + " pts  (punkti + paņemtie akmentini)");
+        resultScores.setText("Tu: " + f1 + " pts  |  AI: " + f2 + " pts  (punkti + paņemtie akmentiņi)");
         cards.show(root, "result");
         return true;
     }
@@ -474,12 +385,12 @@ public class AkmentiniGUI {
 
     static void updateUI() {
         stonesCountLabel.setText(String.valueOf(state.stonesLeft));
+        // lauki no GameState.java: p1Points, p2Points, p1Taken, p2Taken, p1Turn
         p1PtsLabel.setText(String.valueOf(state.p1Points));
         p2PtsLabel.setText(String.valueOf(state.p2Points));
         p1TakenLabel.setText("Paņemti: " + state.p1Taken);
         p2TakenLabel.setText("Paņemti: " + state.p2Taken);
 
-        // active card border
         p1Card.setBorder(BorderFactory.createCompoundBorder(
                 state.p1Turn ? new RoundedBorder(8, ACTIVE_BDR) : new RoundedBorder(8, CARD_BG),
                 BorderFactory.createEmptyBorder(10, 14, 10, 14)));
@@ -487,7 +398,6 @@ public class AkmentiniGUI {
                 !state.p1Turn ? new RoundedBorder(8, ACTIVE_BDR) : new RoundedBorder(8, CARD_BG),
                 BorderFactory.createEmptyBorder(10, 14, 10, 14)));
 
-        // stones visual
         stonesVisual.removeAll();
         int show = Math.min(state.stonesLeft, 70);
         for (int i = 0; i < show; i++) {
@@ -536,21 +446,22 @@ public class AkmentiniGUI {
             g2.dispose();
         }
 
-        @Override public Insets getBorderInsets(Component c) { return new Insets(radius/2, radius/2, radius/2, radius/2); }
-        @Override public Insets getBorderInsets(Component c, Insets i) { i.set(radius/2, radius/2, radius/2, radius/2); return i; }
+        @Override public Insets getBorderInsets(Component c) {
+            return new Insets(radius / 2, radius / 2, radius / 2, radius / 2);
+        }
+
+        @Override public Insets getBorderInsets(Component c, Insets i) {
+            i.set(radius / 2, radius / 2, radius / 2, radius / 2);
+            return i;
+        }
     }
 
-    // ─── WrapLayout (FlowLayout kas pārtīstas) ────────────────────────────────
+    // ─── WrapLayout ───────────────────────────────────────────────────────────
     static class WrapLayout extends FlowLayout {
         WrapLayout(int align, int hgap, int vgap) { super(align, hgap, vgap); }
 
-        @Override public Dimension preferredLayoutSize(Container target) {
-            return layoutSize(target, true);
-        }
-
-        @Override public Dimension minimumLayoutSize(Container target) {
-            return layoutSize(target, false);
-        }
+        @Override public Dimension preferredLayoutSize(Container target) { return layoutSize(target, true); }
+        @Override public Dimension minimumLayoutSize(Container target)   { return layoutSize(target, false); }
 
         private Dimension layoutSize(Container target, boolean preferred) {
             synchronized (target.getTreeLock()) {
