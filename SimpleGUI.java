@@ -1,61 +1,68 @@
 import javax.swing.*;
+import java.awt.*;
 
 public class SimpleGUI {
 
     GameState state;
-    AI ai = new AI(24);
+    AI ai = new AI(10);
 
     JLabel label = new JLabel();
+    JLabel infoLabel = new JLabel("Spēle sākta");
+
+    JButton b2 = new JButton("Paņemt 2");
+    JButton b3 = new JButton("Paņemt 3");
 
     public SimpleGUI() {
         int stones = askStones();
 
-                state = new GameState(stones, 0, 0, 0, 0, true);
+        state = new GameState(stones, 0, 0, 0, 0, true);
 
-                JFrame frame = new JFrame("Akmentiņu spēle");
-                frame.setSize(400, 200);
-                frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        JFrame frame = new JFrame("Akmentiņu spēle");
+        frame.setSize(400, 200);
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setLayout(new BorderLayout());
 
-                JButton b2 = new JButton("Paņemt 2");
-                JButton b3 = new JButton("Paņemt 3");
-                
+        JPanel panel = new JPanel();
+        panel.add(b2);
+        panel.add(b3);
 
-                JPanel panel = new JPanel();
-                panel.add(b2);
-                panel.add(b3);
+        label.setHorizontalAlignment(SwingConstants.CENTER);
+        infoLabel.setHorizontalAlignment(SwingConstants.CENTER);
 
-                frame.add(label, "North");
-                frame.add(panel, "Center");
+        frame.add(label, BorderLayout.NORTH);
+        frame.add(panel, BorderLayout.CENTER);
+        frame.add(infoLabel, BorderLayout.SOUTH);
 
-                update(0, 0);
+        update();
 
-                b2.addActionListener(e -> move(2));
-                b3.addActionListener(e -> move(3));
+        b2.addActionListener(e -> move(2));
+        b3.addActionListener(e -> move(3));
 
-                frame.setVisible(true);
+        frame.setVisible(true);
     }
 
     int askStones() {
-    while (true) {
-        String input = JOptionPane.showInputDialog("Ievadi akmeņu skaitu (50-70):");
+        while (true) {
+            String input = JOptionPane.showInputDialog("Ievadi akmeņu skaitu (50-70):");
 
-        if (input == null) System.exit(0);
+            if (input == null) System.exit(0);
 
-        try {
-            int stones = Integer.parseInt(input);
+            try {
+                int stones = Integer.parseInt(input);
 
-            if (stones < 50 || stones > 70) {
-                JOptionPane.showMessageDialog(null, "Jābūt intervālā 50..70!");
-                continue;
+                if (stones < 50 || stones > 70) {
+                    JOptionPane.showMessageDialog(null, "Jābūt intervālā 50..70!");
+                    continue;
+                }
+
+                return stones;
+
+            } catch (Exception e) {
+                JOptionPane.showMessageDialog(null, "Ievadi veselu skaitli!");
             }
-
-            return stones;
-
-        } catch (Exception e) {
-            JOptionPane.showMessageDialog(null, "Ievadi veselu skaitli!");
         }
     }
-}
+
     void move(int m) {
         if (state.stonesLeft < m) return;
 
@@ -64,21 +71,18 @@ public class SimpleGUI {
 
         int aiMove = ai.chooseMove(state);
         state = state.applyMove(aiMove);
-;
 
-        checkEnd();
-        update(m, aiMove);
+        infoLabel.setText("Tu paņēmi " + m + ", AI paņēma " + aiMove);
+
+        if (checkEnd()) return;
+
+        update();
     }
 
-    void update(int lastPlayerMove, int lastAIMove) {
-        label.setText(
-            "Akmeņi: " + state.stonesLeft +
-            "  Tu: " + state.p1Points +
-            " | AI: " + state.p2Points +
-            "  Pēdējais gājiens:" + " Tu= " + lastPlayerMove +
-            ", AI=" + lastAIMove
-
-        );
+    void update() {
+        label.setText("Akmeņi: " + state.stonesLeft +
+                " | Tu: " + state.p1Points +
+                " | AI: " + state.p2Points);
     }
 
     boolean checkEnd() {
@@ -91,10 +95,12 @@ public class SimpleGUI {
             else if (p2 > p1) msg = "AI uzvarēja";
             else msg = "Neizšķirts";
 
-            JOptionPane.showMessageDialog(null,
-                    "Beigas\nTu: " + p1 + "\nAI: " + p2 + "\n" + msg);
+            label.setText("Beigas");
+            infoLabel.setText("Tu: " + p1 + " | AI: " + p2 + " | " + msg);
 
-            System.exit(0);
+            b2.setEnabled(false);
+            b3.setEnabled(false);
+
             return true;
         }
         return false;
