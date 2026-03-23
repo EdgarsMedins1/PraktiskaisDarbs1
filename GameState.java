@@ -27,11 +27,11 @@ public class GameState {
 
     // Final score includes taken stones
     public int finalScoreP1() {
-        return p1Points;
+        return p1Points + p1taken;
     }
 
     public int finalScoreP2() {
-        return p2Points;
+        return p2Points + p2taken;
     }
 
     // Apply move (take 2 or 3) and return next state
