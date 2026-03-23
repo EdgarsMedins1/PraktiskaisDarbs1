@@ -4,7 +4,7 @@ import java.awt.*;
 public class SimpleGUI {
 
     GameState state;
-    AI ai = new AI(10);
+    AI ai = new AI(24);
 
     JLabel label = new JLabel();
     JLabel infoLabel = new JLabel("Spēle sākta");
