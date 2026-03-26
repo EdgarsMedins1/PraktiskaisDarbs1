@@ -25,6 +25,13 @@ public class SimpleGUI {
         JPanel panel = new JPanel();
         panel.add(b2);
         panel.add(b3);
+        JButton restart = new JButton("Restart");
+        panel.add(restart);
+
+        restart.addActionListener(e -> {
+            frame.dispose();
+            new SimpleGUI();
+        });
 
         label.setHorizontalAlignment(SwingConstants.CENTER);
         infoLabel.setHorizontalAlignment(SwingConstants.CENTER);
