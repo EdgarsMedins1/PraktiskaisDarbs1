@@ -1,12 +1,15 @@
 public class GameState {
     public final int stonesLeft;
 
+    // points already earned from parity rule (+2 each move)
     public final int p1Points;
     public final int p2Points;
 
+    // stones taken (added to points at the end)
     public final int p1Taken;
     public final int p2Taken;
 
+    // true -> Player 1 to move, false -> Player 2 to move
     public final boolean p1Turn;
 
     public GameState(int stonesLeft, int p1Points, int p2Points, int p1Taken, int p2Taken, boolean p1Turn) {
@@ -22,6 +25,7 @@ public class GameState {
         return stonesLeft < 2;
     }
 
+    // Final score includes taken stones
     public int finalScoreP1() {
         return p1Points + p1Taken;
     }
@@ -30,17 +34,12 @@ public class GameState {
         return p2Points + p2Taken;
     }
 
+    // Apply move (take 2 or 3) and return next state
     public GameState applyMove(int take) {
-        if ((take != 2 && take != 3) || take > stonesLeft) {
-            throw new IllegalArgumentException("Nederīgs gājiens: " + take);
-        }
-
         int newStones = stonesLeft - take;
 
-        int np1Points = p1Points;
-        int np2Points = p2Points;
-        int np1Taken = p1Taken;
-        int np2Taken = p2Taken;
+        int np1Points = p1Points, np2Points = p2Points;
+        int np1Taken = p1Taken, np2Taken = p2Taken;
 
         if (p1Turn) {
             np1Taken += take;
@@ -48,18 +47,15 @@ public class GameState {
             np2Taken += take;
         }
 
+        // parity rule after taking: check what remains on table
         if (newStones % 2 == 0) {
-            if (p1Turn) {
-                np2Points += 2;
-            } else {
-                np1Points += 2;
-            }
+            // opponent gets +2
+            if (p1Turn) np2Points += 2;
+            else np1Points += 2;
         } else {
-            if (p1Turn) {
-                np1Points += 2;
-            } else {
-                np2Points += 2;
-            }
+            // current player gets +2
+            if (p1Turn) np1Points += 2;
+            else np2Points += 2;
         }
 
         return new GameState(newStones, np1Points, np2Points, np1Taken, np2Taken, !p1Turn);
